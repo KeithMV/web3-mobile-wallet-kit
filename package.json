@@ -1,0 +1,25 @@
+{
+  "name": "web3-mobile-wallet-kit",
+  "version": "0.1.0",
+  "description": "Mobile Safari wallet connection fixes for Web3 apps",
+  "main": "src/useMobileSafariWallet.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KeithMV/web3-mobile-wallet-kit"
+  },
+  "keywords": [
+    "web3",
+    "wallet",
+    "mobile",
+    "safari",
+    "react",
+    "wagmi"
+  ],
+  "author": "Keith MV",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "wagmi": "^2.0.0",
+    "viem": "^2.0.0"
+  }
+}
