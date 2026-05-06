@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { MobileSafariWalletReturn, MobileSafariWalletOptions } from './types';
 
 // Check if we're on mobile Safari
 function isMobileSafari() {
@@ -7,13 +8,18 @@ function isMobileSafari() {
   return /iPhone|iPad|iPod/i.test(ua) && /Safari/i.test(ua) && !/Chrome|CriOS/i.test(ua);
 }
 
-export function useMobileSafariWallet() {
+export function useMobileSafariWallet(
+  options: MobileSafariWalletOptions = {}
+): MobileSafariWalletReturn {
+  const { autoRetry = true, retryDelay = 2000, onConnectionFailed } = options;
+  
   const { address, isConnected } = useAccount();
   const { connect: wagmiConnect, connectors } = useConnect();
   const { disconnect: wagmiDisconnect } = useDisconnect();
   
   const [connecting, setConnecting] = useState(false);
   const retryRef = useRef(false);
+  const connectAttemptRef = useRef(0);
 
   // Safari fix: handle visibility changes when user returns from wallet
   useEffect(() => {
@@ -24,11 +30,22 @@ export function useMobileSafariWallet() {
         // User came back from MetaMask, give it a sec to connect
         setTimeout(() => {
           if (!isConnected && !retryRef.current) {
-            // Still not connected, might need to retry
-            // TODO: figure out if we should auto-retry or just show message
-            console.log('Connection incomplete after returning from wallet');
+            if (autoRetry && connectAttemptRef.current < 2) {
+              // Auto-retry once
+              console.log('Connection incomplete, retrying...');
+              retryRef.current = true;
+              connectAttemptRef.current++;
+              handleConnect();
+            } else {
+              // Max retries reached or auto-retry disabled
+              console.log('Connection failed after retry');
+              setConnecting(false);
+              if (onConnectionFailed) {
+                onConnectionFailed();
+              }
+            }
           }
-        }, 2000);
+        }, retryDelay);
       }
     }
 
@@ -41,6 +58,7 @@ export function useMobileSafariWallet() {
     if (isConnected) {
       setConnecting(false);
       retryRef.current = false;
+      connectAttemptRef.current = 0;
     }
   }, [isConnected]);
 
@@ -54,6 +72,8 @@ export function useMobileSafariWallet() {
 
   function handleDisconnect() {
     setConnecting(false);
+    retryRef.current = false;
+    connectAttemptRef.current = 0;
     wagmiDisconnect();
   }
 
